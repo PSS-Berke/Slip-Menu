@@ -59,7 +59,7 @@ nav {
   color: var(--white);
   letter-spacing: -0.3px;
 }
-.nav-brand span.anchor { color: var(--coral); font-size: 1.4rem; }
+.nav-logo { height: 2rem; width: auto; display: block; }
 .nav-links {
   display: flex;
   gap: 0.25rem;
