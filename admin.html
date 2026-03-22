@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SlipMenu Admin</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ocean: #1e6091;
+      --ocean-dark: #0a2342;
+      --accent: #f59e0b;
+      --danger: #dc2626;
+      --success: #16a34a;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --muted: #64748b;
+      --modified: #fef3c7;
+      --modified-border: #f59e0b;
+    }
+
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ===== Auth Screen ===== */
+    #auth-screen {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 2rem;
+    }
+    .auth-box {
+      background: var(--card); border-radius: 12px; padding: 2.5rem;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.12); width: 100%; max-width: 380px; text-align: center;
+    }
+    .auth-box h1 { font-size: 1.5rem; color: var(--ocean-dark); margin-bottom: 0.5rem; }
+    .auth-box p { color: var(--muted); margin-bottom: 1.5rem; font-size: 0.9rem; }
+    .auth-input {
+      width: 100%; padding: 0.75rem 1rem; border: 2px solid var(--border);
+      border-radius: 8px; font-size: 1rem; outline: none; margin-bottom: 1rem;
+      transition: border-color 0.2s;
+    }
+    .auth-input:focus { border-color: var(--ocean); }
+    .auth-btn {
+      width: 100%; padding: 0.75rem; background: var(--ocean); color: #fff;
+      border: none; border-radius: 8px; font-size: 1rem; font-weight: 600;
+      cursor: pointer; transition: background 0.2s;
+    }
+    .auth-btn:hover { background: var(--ocean-dark); }
+    .auth-error { color: var(--danger); font-size: 0.85rem; margin-top: 0.75rem; display: none; }
+
+    /* ===== Admin App ===== */
+    #admin-app { display: none; }
+
+    .admin-header {
+      background: var(--ocean-dark); color: #fff; padding: 1rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;
+      position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .admin-header h1 { font-size: 1.1rem; font-weight: 700; letter-spacing: 0.5px; }
+    .admin-header span { font-size: 0.8rem; opacity: 0.7; }
+    .header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .btn {
+      padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600;
+      border: none; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    }
+    .btn-export { background: var(--accent); color: #1a1a1a; }
+    .btn-export:hover { background: #d97706; }
+    .btn-clear { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.3); }
+    .btn-clear:hover { background: rgba(255,255,255,0.25); }
+    .btn-logout { background: rgba(220,38,38,0.2); color: #fca5a5; border: 1px solid rgba(220,38,38,0.4); }
+    .btn-logout:hover { background: rgba(220,38,38,0.4); }
+
+    .admin-toolbar {
+      padding: 1rem 1.5rem; background: var(--card); border-bottom: 1px solid var(--border);
+      display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;
+    }
+    .admin-search {
+      flex: 1; min-width: 200px; padding: 0.5rem 0.75rem; border: 1px solid var(--border);
+      border-radius: 6px; font-size: 0.9rem; outline: none;
+    }
+    .admin-search:focus { border-color: var(--ocean); }
+    .modified-count {
+      font-size: 0.8rem; color: var(--muted); white-space: nowrap;
+    }
+    .modified-count strong { color: var(--accent); }
+
+    /* ===== Table ===== */
+    .table-wrap { overflow-x: auto; padding: 1rem 1.5rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    thead th {
+      text-align: left; padding: 0.6rem 0.75rem; background: var(--ocean-dark); color: #fff;
+      font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+    tbody tr:hover { background: #f1f5f9; }
+    tbody tr.is-modified { background: var(--modified); }
+    tbody tr.is-modified:hover { background: #fde68a; }
+    tbody td { padding: 0.6rem 0.75rem; vertical-align: middle; }
+    .col-name { font-weight: 600; min-width: 160px; }
+    .col-area { white-space: nowrap; color: var(--muted); font-size: 0.8rem; }
+    .col-location { min-width: 180px; color: var(--muted); }
+    .col-slips { white-space: nowrap; }
+    .col-menu { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+    .col-notes { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+    .col-actions { white-space: nowrap; }
+    .modified-dot {
+      display: inline-block; width: 8px; height: 8px; background: var(--accent);
+      border-radius: 50%; margin-right: 6px; flex-shrink: 0;
+    }
+
+    .btn-edit {
+      padding: 0.3rem 0.65rem; background: var(--ocean); color: #fff;
+      border: none; border-radius: 5px; font-size: 0.78rem; font-weight: 600;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .btn-edit:hover { background: var(--ocean-dark); }
+    .btn-reset {
+      padding: 0.3rem 0.65rem; background: transparent; color: var(--danger);
+      border: 1px solid var(--danger); border-radius: 5px; font-size: 0.78rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s; margin-left: 0.4rem;
+    }
+    .btn-reset:hover { background: var(--danger); color: #fff; }
+
+    /* ===== Modal ===== */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; padding: 1rem; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: var(--card); border-radius: 12px; width: 100%; max-width: 640px;
+      max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      transform: translateY(16px); transition: transform 0.2s;
+    }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal-header {
+      padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; background: var(--card); z-index: 1;
+    }
+    .modal-header h2 { font-size: 1rem; color: var(--ocean-dark); }
+    .modal-close {
+      background: none; border: none; font-size: 1.4rem; cursor: pointer;
+      color: var(--muted); line-height: 1; padding: 0 0.25rem;
+    }
+    .modal-close:hover { color: var(--text); }
+    .modal-body { padding: 1.5rem; display: grid; gap: 1rem; }
+    .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+    .form-group label { font-size: 0.8rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+    .form-input, .form-textarea {
+      padding: 0.6rem 0.75rem; border: 1.5px solid var(--border);
+      border-radius: 6px; font-size: 0.9rem; outline: none; font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    .form-input:focus, .form-textarea:focus { border-color: var(--ocean); }
+    .form-textarea { resize: vertical; min-height: 80px; }
+    .form-hint { font-size: 0.75rem; color: var(--muted); }
+    .modal-footer {
+      padding: 1rem 1.5rem; border-top: 1px solid var(--border);
+      display: flex; justify-content: flex-end; gap: 0.75rem;
+      position: sticky; bottom: 0; background: var(--card);
+    }
+    .btn-cancel {
+      padding: 0.6rem 1.25rem; background: transparent; border: 1.5px solid var(--border);
+      border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 600; color: var(--muted);
+    }
+    .btn-cancel:hover { border-color: var(--text); color: var(--text); }
+    .btn-save {
+      padding: 0.6rem 1.25rem; background: var(--ocean); color: #fff;
+      border: none; border-radius: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer;
+    }
+    .btn-save:hover { background: var(--ocean-dark); }
+
+    /* ===== Toast ===== */
+    .toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--ocean-dark); color: #fff;
+      padding: 0.75rem 1.25rem; border-radius: 8px; font-size: 0.875rem; font-weight: 500;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2); z-index: 2000;
+      transform: translateY(20px); opacity: 0; transition: all 0.25s;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { background: var(--success); }
+    .toast.warning { background: #d97706; }
+  </style>
+</head>
+<body>
+
+<!-- Auth Screen -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <h1>⚓ SlipMenu Admin</h1>
+    <p>Enter your password to manage restaurant data</p>
+    <input type="password" class="auth-input" id="pw-input" placeholder="Password" autocomplete="current-password">
+    <button class="auth-btn" id="pw-submit">Sign In</button>
+    <div class="auth-error" id="auth-error">Incorrect password. Try again.</div>
+  </div>
+</div>
+
+<!-- Admin App -->
+<div id="admin-app">
+  <header class="admin-header">
+    <div>
+      <h1>⚓ SlipMenu Admin</h1>
+      <span id="restaurant-count"></span>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-export" id="btn-export">⬇ Export CSV</button>
+      <button class="btn btn-clear" id="btn-clear-all">✕ Clear All Edits</button>
+      <button class="btn btn-logout" id="btn-logout">Sign Out</button>
+    </div>
+  </header>
+
+  <div class="admin-toolbar">
+    <input type="search" class="admin-search" id="admin-search" placeholder="Search restaurants…">
+    <div class="modified-count" id="modified-count"></div>
+  </div>
+
+  <div class="table-wrap">
+    <table id="admin-table">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Name</th>
+          <th>Area</th>
+          <th>Location</th>
+          <th>Slips</th>
+          <th>Menu (preview)</th>
+          <th>Notes (preview)</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="admin-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <h2 id="modal-title">Edit Restaurant</h2>
+      <button class="modal-close" id="modal-close" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Area</label>
+        <input type="text" class="form-input" id="edit-area">
+        <span class="form-hint">e.g. CAPE CORAL - Tarpon Point Marina</span>
+      </div>
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" class="form-input" id="edit-name">
+      </div>
+      <div class="form-group">
+        <label>Location / Address</label>
+        <input type="text" class="form-input" id="edit-location">
+      </div>
+      <div class="form-group">
+        <label>Slip Count / Dock Access</label>
+        <input type="text" class="form-input" id="edit-slips">
+      </div>
+      <div class="form-group">
+        <label>Menu Items</label>
+        <textarea class="form-textarea" id="edit-menu" style="min-height:100px;"></textarea>
+        <span class="form-hint">Separate items with semicolons ( ; )</span>
+      </div>
+      <div class="form-group">
+        <label>Notes / Hours / Info</label>
+        <textarea class="form-textarea" id="edit-notes" style="min-height:120px;"></textarea>
+        <span class="form-hint">Separate details with semicolons ( ; ) — include phone as (xxx) xxx-xxxx</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" id="modal-cancel">Cancel</button>
+      <button class="btn-save" id="modal-save">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== Auth =====
+const PW_HASH = 'bf9f15eca1de5969420ad8202372063dc5386806380031b326cc4c3449de1b18';
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function isAuthed() { return sessionStorage.getItem('adminAuth') === '1'; }
+
+document.getElementById('pw-submit').addEventListener('click', async () => {
+  const val = document.getElementById('pw-input').value;
+  const hash = await sha256(val);
+  if (hash === PW_HASH) {
+    sessionStorage.setItem('adminAuth', '1');
+    showAdmin();
+  } else {
+    document.getElementById('auth-error').style.display = 'block';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+});
+document.getElementById('pw-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('pw-submit').click();
+});
+
+document.getElementById('btn-logout').addEventListener('click', () => {
+  sessionStorage.removeItem('adminAuth');
+  location.reload();
+});
+
+// ===== Data =====
+let allData = [];
+let filteredData = [];
+let overrides = {};
+
+function loadOverrides() {
+  try { overrides = JSON.parse(localStorage.getItem('slipMenuOverrides') || '{}'); }
+  catch(e) { overrides = {}; }
+}
+function saveOverrides() {
+  localStorage.setItem('slipMenuOverrides', JSON.stringify(overrides));
+}
+
+async function fetchCSV() {
+  const res = await fetch('restaurants_boat_access_updated.csv');
+  const text = await res.text();
+  const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+  return parsed.data.filter(r => r.Name && r.Name.trim());
+}
+
+function mergedRow(r) {
+  return overrides[r.Name] ? { ...r, ...overrides[r.Name] } : { ...r };
+}
+
+// ===== Render Table =====
+function escHtml(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderTable() {
+  const q = (document.getElementById('admin-search').value || '').toLowerCase();
+  filteredData = allData.filter(r => {
+    if (!q) return true;
+    const m = mergedRow(r);
+    return [m.Name, m.Area, m.Location, m['Menu Items with Price'], m.Notes]
+      .some(v => (v || '').toLowerCase().includes(q));
+  });
+
+  const modCount = Object.keys(overrides).length;
+  document.getElementById('modified-count').innerHTML =
+    modCount ? `<strong>${modCount}</strong> unsaved edit${modCount !== 1 ? 's' : ''} (export CSV to make permanent)` : '';
+
+  const tbody = document.getElementById('admin-tbody');
+  tbody.innerHTML = filteredData.map((r, i) => {
+    const m = mergedRow(r);
+    const isModified = !!overrides[r.Name];
+    return `
+      <tr class="${isModified ? 'is-modified' : ''}" data-name="${escHtml(r.Name)}">
+        <td>${isModified ? '<span class="modified-dot" title="Modified"></span>' : ''}</td>
+        <td class="col-name">${escHtml(m.Name)}</td>
+        <td class="col-area">${escHtml(m.Area)}</td>
+        <td class="col-location">${escHtml(m.Location)}</td>
+        <td class="col-slips">${escHtml(m['Slip Count'])}</td>
+        <td class="col-menu" title="${escHtml(m['Menu Items with Price'])}">${escHtml((m['Menu Items with Price'] || '').substring(0, 60))}${(m['Menu Items with Price'] || '').length > 60 ? '…' : ''}</td>
+        <td class="col-notes" title="${escHtml(m.Notes)}">${escHtml((m.Notes || '').substring(0, 60))}${(m.Notes || '').length > 60 ? '…' : ''}</td>
+        <td class="col-actions">
+          <button class="btn-edit" onclick="openEdit('${escHtml(r.Name).replace(/'/g,"\\'")}')">Edit</button>
+          ${isModified ? `<button class="btn-reset" onclick="resetRow('${escHtml(r.Name).replace(/'/g,"\\'")}')">Reset</button>` : ''}
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ===== Edit Modal =====
+let editingOrigName = null;
+
+function openEdit(name) {
+  const r = allData.find(x => x.Name === name);
+  if (!r) return;
+  const m = mergedRow(r);
+  editingOrigName = r.Name;
+
+  document.getElementById('modal-title').textContent = `Edit: ${m.Name}`;
+  document.getElementById('edit-area').value = m.Area || '';
+  document.getElementById('edit-name').value = m.Name || '';
+  document.getElementById('edit-location').value = m.Location || '';
+  document.getElementById('edit-slips').value = m['Slip Count'] || '';
+  document.getElementById('edit-menu').value = m['Menu Items with Price'] || '';
+  document.getElementById('edit-notes').value = m.Notes || '';
+
+  document.getElementById('modal-overlay').classList.add('open');
+  document.getElementById('edit-area').focus();
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  editingOrigName = null;
+}
+
+document.getElementById('modal-close').addEventListener('click', closeModal);
+document.getElementById('modal-cancel').addEventListener('click', closeModal);
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+});
+
+document.getElementById('modal-save').addEventListener('click', () => {
+  if (!editingOrigName) return;
+  const r = allData.find(x => x.Name === editingOrigName);
+  if (!r) return;
+
+  const updated = {
+    Area: document.getElementById('edit-area').value.trim(),
+    Name: document.getElementById('edit-name').value.trim(),
+    Location: document.getElementById('edit-location').value.trim(),
+    'Slip Count': document.getElementById('edit-slips').value.trim(),
+    'Menu Items with Price': document.getElementById('edit-menu').value.trim(),
+    Notes: document.getElementById('edit-notes').value.trim(),
+  };
+
+  // Check if anything actually changed vs original
+  const orig = r;
+  const changed = Object.keys(updated).some(k => updated[k] !== (orig[k] || ''));
+  if (!changed) { closeModal(); return; }
+
+  // If name changed, remove old key and update allData reference
+  if (updated.Name !== editingOrigName) {
+    delete overrides[editingOrigName];
+    const idx = allData.findIndex(x => x.Name === editingOrigName);
+    if (idx >= 0) allData[idx] = { ...allData[idx], ...updated };
+  }
+
+  overrides[updated.Name] = updated;
+  saveOverrides();
+  closeModal();
+  renderTable();
+  showToast('Saved! Export CSV to make permanent.', 'success');
+});
+
+// ===== Reset Row =====
+function resetRow(name) {
+  if (!confirm(`Reset "${name}" back to the original CSV data?`)) return;
+  delete overrides[name];
+  saveOverrides();
+  renderTable();
+  showToast('Row reset to original data.', 'warning');
+}
+
+// ===== Clear All =====
+document.getElementById('btn-clear-all').addEventListener('click', () => {
+  const n = Object.keys(overrides).length;
+  if (n === 0) { showToast('No edits to clear.'); return; }
+  if (!confirm(`Clear all ${n} edit${n !== 1 ? 's' : ''}? This cannot be undone.`)) return;
+  overrides = {};
+  saveOverrides();
+  renderTable();
+  showToast('All edits cleared.', 'warning');
+});
+
+// ===== Export CSV =====
+document.getElementById('btn-export').addEventListener('click', () => {
+  const exportData = allData.map(r => mergedRow(r)).map(r => ({
+    Area: r.Area,
+    Name: r.Name,
+    Location: r.Location,
+    'Slip Count': r['Slip Count'],
+    'Menu Items with Price': r['Menu Items with Price'],
+    Notes: r.Notes,
+  }));
+
+  const csv = Papa.unparse(exportData);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'restaurants_boat_access_updated.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV downloaded! Replace the file in your project folder.', 'success');
+});
+
+// ===== Search =====
+document.getElementById('admin-search').addEventListener('input', renderTable);
+
+// ===== Toast =====
+let toastTimer;
+function showToast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast' + (type ? ' ' + type : '');
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+// ===== Init =====
+async function showAdmin() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('admin-app').style.display = 'block';
+
+  loadOverrides();
+  allData = await fetchCSV();
+  document.getElementById('restaurant-count').textContent = `${allData.length} restaurants`;
+  renderTable();
+}
+
+// Auto-login if session still valid
+if (isAuthed()) showAdmin();
+</script>
+</body>
+</html>

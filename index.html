@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SlipMenu — Dine by Water</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body data-page="index">
+
+  <nav>
+    <a href="index.html" class="nav-brand">
+      <span class="anchor">⚓</span> SlipMenu
+    </a>
+    <div class="nav-links">
+      <a href="index.html" class="active">Restaurants</a>
+      <a href="map.html">Map</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <h1>Dine by <em>Water</em></h1>
+    <p>Boat-accessible restaurants across Cape Coral, Fort Myers, Pine Island &amp; beyond.</p>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input
+        type="search"
+        id="search-input"
+        placeholder="Search by name, area, or menu item..."
+        autocomplete="off"
+      />
+    </div>
+  </section>
+
+  <div class="filter-bar">
+    <button class="filter-tab active" data-area="all">All Areas</button>
+    <button class="filter-tab" data-area="cape-coral">Cape Coral</button>
+    <button class="filter-tab" data-area="fort-myers-beach">Fort Myers Beach</button>
+    <button class="filter-tab" data-area="fort-myers">Fort Myers</button>
+    <button class="filter-tab" data-area="pine-island">Pine Island</button>
+    <button class="filter-tab" data-area="captiva">Captiva</button>
+  </div>
+
+  <main class="main-content">
+    <p class="results-info" id="results-info"></p>
+    <div class="restaurant-grid" id="restaurant-grid">
+      <div class="loading">Loading restaurants...</div>
+    </div>
+  </main>
+
+  <footer>
+    <strong>SlipMenu</strong> &mdash; Southwest Florida boat-accessible dining guide
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="js/coords.js"></script>
+  <script src="js/weather.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

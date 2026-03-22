@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Map — SlipMenu</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+</head>
+<body data-page="map">
+
+  <nav>
+    <a href="index.html" class="nav-brand">
+      <span class="anchor">⚓</span> SlipMenu
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Restaurants</a>
+      <a href="map.html" class="active">Map</a>
+    </div>
+  </nav>
+
+  <main class="map-container">
+    <h1 class="map-title">SW Florida Waterways</h1>
+    <p class="map-subtitle">Click any marker to see restaurant details. Tap an area below to zoom in.</p>
+
+    <div class="map-frame">
+      <div id="map"></div>
+    </div>
+
+    <h2 style="font-size:1rem;font-weight:700;color:var(--navy);margin-bottom:0.75rem;">Browse by Area</h2>
+    <div class="area-grid" id="area-cards">
+      <!-- Populated by app.js -->
+    </div>
+  </main>
+
+  <footer>
+    <strong>SlipMenu</strong> &mdash; Southwest Florida boat-accessible dining guide
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="js/coords.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
