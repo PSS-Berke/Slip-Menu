@@ -19,9 +19,16 @@
     </div>
   </nav>
 
-  <section class="hero">
-    <h1>Dine by <em>Water</em></h1>
-    <p>Boat-accessible restaurants across Cape Coral, Fort Myers, Pine Island &amp; beyond.</p>
+  <div class="filter-bar">
+    <button class="filter-tab active" data-area="all">All Areas</button>
+    <button class="filter-tab" data-area="cape-coral">Cape Coral</button>
+    <button class="filter-tab" data-area="fort-myers-beach">Fort Myers Beach</button>
+    <button class="filter-tab" data-area="fort-myers">Fort Myers</button>
+    <button class="filter-tab" data-area="pine-island">Pine Island</button>
+    <button class="filter-tab" data-area="captiva">Captiva</button>
+  </div>
+
+  <div class="search-bar">
     <div class="search-wrap">
       <span class="search-icon">🔍</span>
       <input
@@ -31,15 +38,6 @@
         autocomplete="off"
       />
     </div>
-  </section>
-
-  <div class="filter-bar">
-    <button class="filter-tab active" data-area="all">All Areas</button>
-    <button class="filter-tab" data-area="cape-coral">Cape Coral</button>
-    <button class="filter-tab" data-area="fort-myers-beach">Fort Myers Beach</button>
-    <button class="filter-tab" data-area="fort-myers">Fort Myers</button>
-    <button class="filter-tab" data-area="pine-island">Pine Island</button>
-    <button class="filter-tab" data-area="captiva">Captiva</button>
   </div>
 
   <main class="main-content">

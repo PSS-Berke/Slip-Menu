@@ -54,6 +54,29 @@ function getPhone(notes) {
   return match ? match[0] : null;
 }
 
+function getTextPhone(notes) {
+  if (!notes) return null;
+  const match = notes.match(/[Tt]ext:\s*(\(?\d{3}\)?[\s.\-]\d{3}[\s.\-]\d{4})/);
+  return match ? match[1] : null;
+}
+
+// ===== URL Helpers =====
+function getWebsite(r) {
+  return (r.Website || '').trim() || null;
+}
+
+function getMenuUrl(r) {
+  return (r['Menu URL'] || '').trim() || null;
+}
+
+function getOpenTableUrl(r) {
+  return (r['OpenTable URL'] || '').trim() || null;
+}
+
+function displayUrl(url) {
+  return url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+}
+
 // ===== Menu Preview =====
 function getMenuPreview(menuStr, max = 4) {
   if (!menuStr) return [];
@@ -97,6 +120,8 @@ function renderCard(r, index) {
 
   const slips = r['Slip Count'] ? r['Slip Count'] : 'Info available';
   const phone = getPhone(r.Notes);
+  const menuUrl = getMenuUrl(r);
+  const website = getWebsite(r);
 
   const coords = typeof RESTAURANT_COORDS !== 'undefined' ? RESTAURANT_COORDS[r.Name] : null;
   const weatherKey = coords ? getWeatherKey(coords[0], coords[1]) : 'none';
@@ -131,6 +156,7 @@ function renderCard(r, index) {
         ${weatherWidget}
       </div>
       <div class="card-footer">
+        ${menuUrl ? `<a href="${menuUrl}" target="_blank" rel="noopener" class="btn-menu">View Menu</a>` : (website ? `<a href="${website}" target="_blank" rel="noopener" class="btn-menu">Visit Website</a>` : '')}
         <a href="restaurant.html?id=${index}" class="btn-details">
           View Details <span>→</span>
         </a>
@@ -215,6 +241,10 @@ async function initDetailPage() {
   const areaKey = getAreaKey(r.Area);
   const areaLabel = getAreaLabel(r.Area);
   const phone = getPhone(r.Notes);
+  const textPhone = getTextPhone(r.Notes);
+  const website = getWebsite(r);
+  const menuUrl = getMenuUrl(r);
+  const openTableUrl = getOpenTableUrl(r);
 
   // Parse menu items
   const menuItems = (r['Menu Items with Price'] || '')
@@ -250,6 +280,15 @@ async function initDetailPage() {
         ${phone ? `<div class="detail-location" style="margin-top:0.4rem;">
           <span>📞</span>
           <a href="tel:${phone.replace(/\D/g, '')}" style="color:rgba(255,255,255,0.9);text-decoration:underline;">${escapeHtml(phone)}</a>
+        </div>` : ''}
+        ${textPhone ? `<div class="detail-location" style="margin-top:0.4rem;">
+          <span>💬</span>
+          <a href="sms:${textPhone.replace(/\D/g, '')}" style="color:rgba(255,255,255,0.9);text-decoration:underline;">Text: ${escapeHtml(textPhone)}</a>
+        </div>` : ''}
+        ${(website || menuUrl || openTableUrl) ? `<div class="detail-links">
+          ${website ? `<a href="${website}" target="_blank" rel="noopener" class="detail-link-btn detail-link-website">🌐 Website</a>` : ''}
+          ${menuUrl ? `<a href="${menuUrl}" target="_blank" rel="noopener" class="detail-link-btn detail-link-menu">🍽 View Menu</a>` : ''}
+          ${openTableUrl ? `<a href="${openTableUrl}" target="_blank" rel="noopener" class="detail-link-btn detail-link-opentable">📅 OpenTable</a>` : ''}
         </div>` : ''}
       </div>
       ${detailWeatherSection}
